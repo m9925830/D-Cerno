@@ -1,0 +1,9 @@
+@import "@material/button/mdc-button";
+
+html{
+    min-height:100%;
+}
+
+body {
+   background: url(d-cerno.jpg) no-repeat center bottom;   
+}

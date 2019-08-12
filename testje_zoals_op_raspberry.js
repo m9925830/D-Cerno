@@ -102,7 +102,7 @@ function configureListeners() {
                 if (doc.data() && doc.data().set) {
                     console.log(doc.data().set);
 
-                    socket.write('\x0202:set0000020O00000C00000000000000:{"nam":"slsvol","vol":'+ doc.data().set + '}\x03');
+                    socket.write('\x0202:set0000020O00000C00000000000000:{"nam":"slsvol","vol":' + doc.data().set + '}\x03');
                 }
             }, function (error) { console.log(error) }
         );
@@ -330,3 +330,28 @@ function getMac() {
 }
 
 getMac();
+
+
+
+// Webserver
+
+
+var path = require('path');
+var express = require('express');
+var app = express();
+
+app.use(express.static(path.join(__dirname, 'public')));
+app.get('/', function (req, res) {
+    res.sendFile(__dirname + "/" + "index.htm");
+});
+
+
+var server = app.listen(8081, function () {
+    var host = server.address().address
+    var port = server.address().port
+
+    console.log("Example app listening at http://%s:%s", host, port)
+})
+
+
+

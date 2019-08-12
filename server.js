@@ -4,7 +4,7 @@ var firebase = require("firebase/app");
 require("firebase/firestore");
 var arp = require('node-arp');
 var mac = "";
-// This function create and return a net.Socket object to represent TCP client.
+
 
 
 var config = {
