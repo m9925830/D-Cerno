@@ -11,6 +11,7 @@ var firsttime = true;
 
 var firebase = require("firebase/app");
 require("firebase/firestore");
+require("firebase/auth")
 var arp = require('node-arp');
 var mac = "";
 
@@ -339,12 +340,101 @@ getMac();
 var path = require('path');
 var express = require('express');
 var app = express();
-
+app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
+
 app.get('/', function (req, res) {
-    res.sendFile(__dirname + "/" + "index.htm");
+
+    if (firebase.auth().currentUser) {
+        let engineQuery = database.collection('engines').where('user', '==', firebase.auth().currentUser.uid).get()
+            .then(snapshot => {
+                console.log(snapshot);
+                if (snapshot.empty) {
+                    console.log('No mac found yet.');
+                    res.redirect('/connect?user=' + firebase.auth().currentUser.email);
+                    return;
+                }
+                snapshot.forEach(doc => {
+                    console.log(doc.id);
+                    mac = doc.id;
+                    host = doc.data().ip;
+                    res.redirect('/connect?user=' + firebase.auth().currentUser.email);
+                  });               
+            })
+            .catch(err => {
+                console.log('Error getting documents', err);
+            });
+        res.redirect('/connect?user=' + firebase.auth().currentUser.email);
+
+    } else {
+        console.log('no current user');
+        res.sendFile(__dirname + "/public/signup.html");
+    }
+});
+app.get('/register', function (req, res) {
+    res.sendFile(__dirname + "/public/register.html");
+});
+app.get('/connect', function (req, res) {
+    res.sendFile(__dirname + "/public/connect-cur.html");
 });
 
+app.get('/login', function (req, res) {
+    res.sendFile(__dirname + "/public/signup.html");
+});
+
+app.get('/logout', function (req, res) {
+    firebase.auth().signOut().then(function () {
+        res.redirect('/');
+        console.log('successfully logged out')
+    }, function (error) {
+        // An error happened.
+        console.log(error);
+    });
+
+});
+
+app.post('/login', function (req, res) {
+    firebase.auth().signInWithEmailAndPassword(req.body.email, req.body.password).then(function () {
+        res.redirect('/');
+    })
+        .catch(function (error) {
+            // Handle Errors here.
+            console.log(error.code);
+            console.log(error.message);
+            res.redirect('/login?error=' + error.code.slice(5));
+        });
+
+});
+
+app.post('/register', function (req, res) {
+    if (req.body.password === req.body.password2) {
+        firebase.auth().createUserWithEmailAndPassword(req.body.email, req.body.password).then(function () {
+            res.redirect('/');
+        })
+            .catch(function (error) {
+                // Handle Errors here.
+                console.log(error.code);
+                console.log(error.message);
+                res.redirect('/register?error=' + error.code.slice(5));
+            });
+    } else {
+        res.redirect('/register?error=password-not-same');
+    }
+
+});
+
+app.post('/connect-cur', function (req, res) {
+    firebase.auth().signInWithEmailAndPassword(req.body.email, req.body.password).then(function () {
+        res.redirect('/');
+    })
+        .catch(function (error) {
+            // Handle Errors here.
+            console.log(error.code);
+            console.log(error.message);
+            res.redirect('/login?error=' + error.code.slice(5));
+        });
+
+});
 
 var server = app.listen(8081, function () {
     var host = server.address().address
