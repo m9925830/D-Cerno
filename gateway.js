@@ -2,9 +2,9 @@ var net = require('net');
 
 // Create socket
 var port = 5011;
-
 var timeout = 1000;
 var retrying = false;
+var alive = false;
 var listeners = [];
 
 
@@ -14,9 +14,9 @@ require("firebase/firestore");
 require("firebase/auth")
 var arp = require('node-arp');
 const fs = require('fs');
-let IPData = require('./ip-address.json');
-mac = IPData.mac;
-host = IPData.ip;
+let engineData = require('./ip-address.json');
+mac = engineData.mac;
+host = engineData.ip;
 
 
 
@@ -247,6 +247,7 @@ function makeConnection() {
 function connectEventHandler() {
     console.log('connected');
     retrying = false;
+    alive = true;
     var body = '{"typ":"Application","nam":"DU","ver":"1.01","inf":"","svr":0,"tim":""}';
     socket.write('\x0202:con1234020O00002C00000000000000:' + body + '\x03');
     socket.write('\x0202:get0000029O00002C00000000000000:{"nam":"gunits"}\x03');
@@ -285,6 +286,7 @@ function closeEventHandler() {
     console.log('close');
     if (!retrying) {
         retrying = true;
+        alive = false;
         socket.destroy();
         socket.unref();
         console.log('Is socket destroyed? ', socket.destroyed);
@@ -336,7 +338,7 @@ function getMac() {
 
 
 // Webserver
-
+firebase.auth().signInWithEmailAndPassword("gateway@micromanager.com", "123456");
 
 var path = require('path');
 var express = require('express');
@@ -345,67 +347,23 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', function (req, res) {
-
     if (firebase.auth().currentUser) {
-        let engineQuery = database.collection('engines').where('user', '==', firebase.auth().currentUser.uid).get()
-            .then(snapshot => {
-                
-                if (snapshot.empty) {
-                    console.log('No mac found yet.');
-                    res.redirect('/connect?user=' + firebase.auth().currentUser.email);
-                    return;
-                }
-                if (snapshot.size === 1) {
-                    arp.getMAC(snapshot.docs[0].data().ip, function (err, mac_) {
-                        if (!err) {
-                            if (snapshot.docs[0].id == mac_) {
-                                mac = snapshot.docs[0].id
-                                host = snapshot.docs[0].data().ip;
-                                res.redirect('/success?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
-                            }
-                        } else {
-                            res.redirect('/failure?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
-                        }
-                    });
-                } else {
-                    let host_string = '';
-                    let mac_string = '';
-                    snapshot.forEach(doc => {
-                        mac_string = mac_string + '|' + doc.id;
-                        host_string = host_string + '|' + doc.data().ip;
-                    });
-                    res.redirect('/select?mac=' + mac_string.substring(1) + '&host=' + host_string.substring(1));
-                }
-            })
-            .catch(err => {
-                console.log('Error getting documents', err);
-            });
-
+        if (host != '') {
+            if (alive) {
+                res.redirect('/success?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
+            } else {
+                res.redirect('/failure?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
+            }
+        } else {
+            res.redirect('/connect');
+        }
     } else {
-        console.log('no current user');
-        res.sendFile(__dirname + "/public/signup.html");
+        res.redirect('/no-internet');
     }
 });
-app.get('/register', function (req, res) {
-    res.sendFile(__dirname + "/public/register.html");
-});
+
 app.get('/connect', function (req, res) {
     res.sendFile(__dirname + "/public/connect-cur.html");
-});
-
-app.get('/login', function (req, res) {
-    res.sendFile(__dirname + "/public/signup.html");
-});
-
-app.get('/logout', function (req, res) {
-    firebase.auth().signOut().then(function () {
-        res.redirect('/');
-        console.log('successfully logged out')
-    }, function (error) {
-        // An error happened.
-        console.log(error);
-    });
-
 });
 
 app.get('/success', function (req, res) {
@@ -416,60 +374,40 @@ app.get('/failure', function (req, res) {
     res.sendFile(__dirname + "/public/failure.html");
 });
 
-app.get('/select', function (req, res) {
-    res.sendFile(__dirname + "/public/select-ip.html");
-});
-
-app.post('/login', function (req, res) {
-    firebase.auth().signInWithEmailAndPassword(req.body.email, req.body.password).then(function () {
-        res.redirect('/');
-    })
-        .catch(function (error) {
-            // Handle Errors here.
-            console.log(error.code);
-            console.log(error.message);
-            res.redirect('/login?error=' + error.code.slice(5));
-        });
-
-});
-
-
-app.post('/register', function (req, res) {
-    if (req.body.password === req.body.password2) {
-        firebase.auth().createUserWithEmailAndPassword(req.body.email, req.body.password).then(function () {
-            res.redirect('/');
-        })
-            .catch(function (error) {
-                // Handle Errors here.
-                console.log(error.code);
-                console.log(error.message);
-                res.redirect('/register?error=' + error.code.slice(5));
-            });
-    } else {
-        res.redirect('/register?error=password-not-same');
-    }
-
-});
-
-app.post('/connect-cur', function (req, res) {
+app.post('/connect', function (req, res) {
     if (firebase.auth().currentUser) {
-        arp.getMAC(req.body.inputIP, function (err, mac_) {
-            if (!err) {
-                mac = mac_;
-                host = req.body.inputIP;
-                database.collection('engines').doc(mac).set({ 'ip': host }, { merge: true });
-                let data = JSON.stringify({ 'ip': host, 'mac': mac });
-                fs.writeFileSync('ip-address.json', data);
-                makeConnection();
-                createDataStructure();
-                configureListeners();
-                res.redirect('/success?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
-            } else {
-                res.redirect('/connect?user=' + firebase.auth().currentUser.email + '&error=Could not make connection to device');
-            }
-        });
+        if (!alive) {
+            arp.getMAC(req.body.inputIP, function (err, mac_) {
+                if (!err) {
+                    var testSocket = new net.Socket();
+                    testSocket.connect(port, req.body.inputIP, function () {
+                        console.log('yess');
+                        mac = mac_;
+                        host = req.body.inputIP;
+                        let data = JSON.stringify({ 'ip': host, 'mac': mac });
+                        fs.writeFileSync('ip-address.json', data);
+                        testSocket.end();
+                        testSocket = null;
+                        makeConnection();
+                        createDataStructure();
+                        configureListeners();
+                        res.redirect('/success?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
+                    });
+                    testSocket.on('error', function () {
+                        console.log('not a d-cerno');
+                        testSocket.end();
+                        testSocket = null;
+                        res.redirect('/connect?user=' + firebase.auth().currentUser.email + '&error=Could not make connection to device');
+                    });
+                } else {
+                    res.redirect('/connect?user=' + firebase.auth().currentUser.email + '&error=Could not make connection to device');
+                }
+            });
+        } else {
+            res.redirect('/success?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
+        }
     } else {
-        res.redirect('/');
+        res.redirect('/no-internet');
     }
 });
 

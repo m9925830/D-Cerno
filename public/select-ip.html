@@ -9,7 +9,7 @@
     <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css"
         integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
-    <link type="text/css" rel="stylesheet" href="/style.css" />
+    <link type="text/css" rel="stylesheet" href="style.css" />
 
     <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js"
         integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo"
@@ -25,22 +25,25 @@
         window.addEventListener('load', function () {
             var url_string = window.location.href;
             var url = new URL(url_string);
-            document.getElementById('user-email').innerHTML = url.searchParams.get('user');
-            document.getElementById('ip-error').innerHTML = url.searchParams.get('error');
+            var macArray = url.searchParams.get('mac').split('|');
+            var hostArray = url.searchParams.get('host').split('|');
+            macArray.forEach((x, i) => {
+                add(hostArray[i], x);
+            });
         });
-        function ValidateIPaddress(inputText) {
 
-            var ipformat = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
-            console.log(inputText);
-            if (inputText.match(ipformat)) {
-                document.getElementById('loading').style.visibility = "visible";
-                document.getElementById("connect-form").submit();
-            }
-            else {
-                alert("You have entered an invalid IP address format!");
-                return false;
-            }
-        }      
+        function add(ip, mac) {
+            var element = document.createElement("input");
+            element.type = 'button';
+            element.value = 'IP: ' + ip + '    MAC: '+mac;
+            element.className = "btn btn-lg btn-primary btn-block text-left small";
+            element.onclick = function () { // Note this is a function
+                document.getElementById("inputIP").value = ip;
+                document.getElementById("inputIPForm").submit();
+            };
+            document.getElementById("engines").appendChild(element);
+        }
+
     </script>
 </head>
 
@@ -48,8 +51,9 @@
 
     <main role="main">
         <div class="container">
-            <h1 class="mt-5">Configure the Gateway</h1>
-            <p class="lead">Give the IP address of the D-Cerno CU-R.</p>
+            <h1 class="mt-5">Select your engine</h1>
+            <p class="lead">Multiple D-Cerno CU-R engines are registered with this account. Please select the IP & MAC
+                address for this engine.</p>
 
         </div>
     </main>
@@ -60,19 +64,12 @@
 
 
 
-    <form class="form-signin" action="/connect" method="post" name="connect-form">
-        <h1 class="h3 mb-3 font-weight-normal">Enter IP Address</h1>
-        <label for="inputIP" class="sr-only">IP Address</label>
-        <input id="inputIP" class="form-control mask-ipv4" required="" autofocus="" value="192.168.0.100"
+    <form id="inputIPForm" class="form-signin" action="/connect-cur" method="post" style="max-width: 450px;">
+        
+        <input id="inputIP" type="hidden" value="192.168.0.100"
             name="inputIP">
-        <p id="ip-error" class="errormessage"></p>
-        <button class="btn btn-lg btn-primary btn-block"
-            onclick="ValidateIPaddress(document.getElementById('inputIP').value)">Connect with CU-R</button>
-        <div class="text-center" >
-            <div class="spinner-border text-primary loading-spinner" role="status" id="loading">
-                <span class="sr-only">Loading...</span>
-            </div>
-        </div>
+
+        <p id="engines">Choose your engine:</p>
     </form>
 
 
