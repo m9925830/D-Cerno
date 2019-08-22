@@ -1,20 +1,18 @@
-var net = require('net');
 
-// Create socket
 var port = 5011;
 var timeout = 1000;
 var retrying = false;
 var alive = false;
 var listeners = [];
-
-
-
+var net = require('net');
 var firebase = require("firebase/app");
+var arp = require('node-arp');
+var engineData = require('./ip-address.json');
+var internetAvailable = require("internet-available");
+const fs = require('fs');
 require("firebase/firestore");
 require("firebase/auth")
-var arp = require('node-arp');
-const fs = require('fs');
-let engineData = require('./ip-address.json');
+
 mac = engineData.mac;
 host = engineData.ip;
 
@@ -31,32 +29,9 @@ var config = {
     messagingSenderId: "548082438008"
 };
 firebase.initializeApp(config);
-
 var database = firebase.firestore();
 
 
-
-
-/*
-mac = '00:0e:3d:11:0a:76';
-createDataStructure();
-configureListeners();
-*/
-
-
-/*
-function writeUserData(data) {
-    database.collection('users').add({
-        data: data
-    })
-        .then(function (docRef) {
-            console.log("Document written with ID: ", docRef.id);
-        })
-        .catch(function (error) {
-            console.error("Error adding document: ", error);
-        });
-}
-*/
 
 function writeEngineData(data) {
     if (data.nam && data.nam == "lsvol") {
@@ -102,73 +77,61 @@ function configureListeners() {
         database.collection('engines').doc(mac).collection('volume').doc('set').onSnapshot(
             function (doc) {
                 if (doc.data() && doc.data().set) {
-                    console.log(doc.data().set);
-
                     socket.write('\x0202:set0000020O00000C00000000000000:{"nam":"slsvol","vol":' + doc.data().set + '}\x03');
                 }
-            }, function (error) { console.log(error) }
+            }, function (error) {  }
         );
 
     listeners[1] =
         database.collection('engines').doc(mac).collection('recording').doc('set').onSnapshot(
             function (doc) {
                 if (doc.data() && doc.data().set) {
-                    console.log(doc.data().set);
-
                     socket.write('\x0202:set0000029O00000C00000000000000:{"nam":"srecstat","stat":"'
                         + doc.data().set + '"}\x03');
                 }
-            }, function (error) { console.log(error) }
+            }, function (error) {  }
         );
 
     listeners[2] =
         database.collection('engines').doc(mac).collection('units').doc('get').onSnapshot(
             function (doc) {
                 if (doc.data() && doc.data().timestamp) {
-                    console.log(doc.data().timestamp);
-
                     socket.write('\x0202:get0000029O00000C00000000000000:{"nam":"gunits"}\x03');
                 }
-            }, function (error) { console.log(error) }
+            }, function (error) {  }
         );
 
     listeners[3] =
         database.collection('engines').doc(mac).collection('micstat').doc('set').onSnapshot(
             function (doc) {
                 if (doc.data() && doc.data().uid) {
-                    console.log(doc.data());
-
                     socket.write('\x0202:set0000029O00000C00000000000000:{"nam":"smicstat","uid":"'
                         + doc.data().uid + '","stat":"' + doc.data().stat + '"}\x03');
                 }
-            }, function (error) { console.log(error) }
+            }, function (error) {  }
         );
 
     listeners[4] =
         database.collection('engines').doc(mac).collection('lifecheck').doc('getEngine').onSnapshot(
             function (doc) {
                 if (doc.data() && doc.data().timestamp) {
-                    console.log(doc.data().timestamp);
                     socket.write('\x0202:lfc0000020O00000C00000000000000:\x03');
-
                     database.collection('engines').doc(mac).collection('lifecheck').doc('rep').update({
                         proxyLive: true
                     });
                 }
-            }, function (error) { console.log(error) }
+            }, function (error) {  }
         );
 
     listeners[5] =
         database.collection('engines').doc(mac).collection('microphonemode').doc('set').onSnapshot(
             function (doc) {
                 if (doc.data()) {
-                    console.log(doc.data());
-
                     socket.write('\x0202:set0000020O00000C00000000000000:{"nam":"smmo","mmo":'
                         + doc.data().mode + ',"mio":' + doc.data().option + ', "mat":' +
                         doc.data().activation + '}\x03');
                 }
-            }, function (error) { console.log(error) }
+            }, function (error) {    }
         );
 
 }
@@ -227,38 +190,27 @@ function createDataStructure() {
             }
         })
         .catch((err) => {
-            console.log(err);
+            
         });
 
 }
 
 
-
-
-
-
-
-
 // Functions to handle socket events
 function makeConnection() {
     socket.connect(port, host);
-    console.log('make connection');
+    
 }
 function connectEventHandler() {
-    console.log('connected');
+    console.log(new Date().toISOString() + '    Made succesfull connection with D-Cerno CU-R on http://'+host+':'+port );
     retrying = false;
     alive = true;
     var body = '{"typ":"Application","nam":"DU","ver":"1.01","inf":"","svr":0,"tim":""}';
     socket.write('\x0202:con1234020O00002C00000000000000:' + body + '\x03');
     socket.write('\x0202:get0000029O00002C00000000000000:{"nam":"gunits"}\x03');
-
-
-
-
-
 }
+
 function dataEventHandler(data) {
-    console.log('Server return data : ' + data);
     var data2 = data.toString('utf8');
     var parts = data2.split('\x03\x02');
     var length = parts.length;
@@ -266,40 +218,35 @@ function dataEventHandler(data) {
     parts[length - 1] = parts[length - 1].replace(/\x03/g, '');
     for (var i = 0; i < length; i++) {
         var data3 = JSON.parse(parts[i].slice(35));
-        console.log(data3);
         writeEngineData(data3);
+        console.log(new Date().toISOString() + '    D-Cerno sends data to the gateway:' + JSON.stringify(data3) );
     }
 }
 function endEventHandler(end) {
-    console.log('end' + end);
+    
 }
 function timeoutEventHandler(time) {
-    console.log('timeout' + time);
+   
 }
 function drainEventHandler(drain) {
-    console.log('drain' + drain);
+    
 }
 function errorEventHandler(err) {
-    console.log('error' + err);
+   
 }
 function closeEventHandler() {
-    console.log('close');
     if (!retrying) {
         retrying = true;
         alive = false;
-        socket.destroy();
-        socket.unref();
-        console.log('Is socket destroyed? ', socket.destroyed);
-        console.log('Reconnecting...');
+        socket.end();
+        console.log(new Date().toISOString() + '    Connection with D-Cerno CU-R has been closed' ); 
     }
     setTimeout(makeConnection, timeout);
-    console.log(retrying);
 }
 
 // Create socket and bind callbacks
 var socket = new net.Socket();
 socket.setKeepAlive(true);
-
 socket.on('connect', connectEventHandler);
 socket.on('data', dataEventHandler);
 socket.on('end', endEventHandler);
@@ -308,38 +255,29 @@ socket.on('drain', drainEventHandler);
 socket.on('error', errorEventHandler);
 socket.on('close', closeEventHandler);
 
-// Connect
 
-
-function getMac() {
-    arp.getMAC('169.254.11.20', function (err, mac_) {
+function getMac(host_) {
+    arp.getMAC(host_, function (err, mac_) {
         if (!err) {
-
-            //listeners.forEach(x => x());
-
             mac = mac_;
             makeConnection();
             createDataStructure();
             configureListeners();
-
-            console.log('Connecting to ' + host + ':' + port + '...');
-
-
         }
         else {
-            console.log('Trying to find mac');
-            getMac();
+            if (!alive) getMac(host_);
         }
     });
 }
 
-//getMac();
+// Connect
+firebase.auth().signInWithEmailAndPassword("gateway@micromanager.com", "123456").then(function () {
+    if (host != '') getMac(host);
+});
 
 
 
 // Webserver
-firebase.auth().signInWithEmailAndPassword("gateway@micromanager.com", "123456");
-
 var path = require('path');
 var express = require('express');
 var app = express();
@@ -347,19 +285,26 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', function (req, res) {
-    if (firebase.auth().currentUser) {
-        if (host != '') {
-            if (alive) {
-                res.redirect('/success?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
+    internetAvailable().then(function () {
+        if (firebase.auth().currentUser) {
+            if (host != '') {
+                if (alive) {
+                    res.redirect('/success?mac=' + mac + '&host=' + host);
+                } else {
+                    res.redirect('/failure?mac=' + mac + '&host=' + host);
+                }
             } else {
-                res.redirect('/failure?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
+                res.redirect('/connect');
             }
         } else {
-            res.redirect('/connect');
+            firebase.auth().signInWithEmailAndPassword("gateway@micromanager.com", "123456").then(function () {
+                if (host != '') getMac(host);
+            });
+            res.redirect('/failure?mac=' + mac + '&host=' + host);
         }
-    } else {
-        res.redirect('/no-internet');
-    }
+    }).catch(function () {
+        res.sendFile(__dirname + "/public/no-internet.html");
+    });
 });
 
 app.get('/connect', function (req, res) {
@@ -374,14 +319,19 @@ app.get('/failure', function (req, res) {
     res.sendFile(__dirname + "/public/failure.html");
 });
 
+app.get('/no-internet', function (req, res) {
+    res.sendFile(__dirname + "/public/no-internet.html");
+});
+
 app.post('/connect', function (req, res) {
-    if (firebase.auth().currentUser) {
-        if (!alive) {
+    internetAvailable().then(function () {
+        if (firebase.auth().currentUser) {
+            socket.end();
+
             arp.getMAC(req.body.inputIP, function (err, mac_) {
                 if (!err) {
                     var testSocket = new net.Socket();
                     testSocket.connect(port, req.body.inputIP, function () {
-                        console.log('yess');
                         mac = mac_;
                         host = req.body.inputIP;
                         let data = JSON.stringify({ 'ip': host, 'mac': mac });
@@ -391,31 +341,31 @@ app.post('/connect', function (req, res) {
                         makeConnection();
                         createDataStructure();
                         configureListeners();
-                        res.redirect('/success?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
+                        res.redirect('/success?mac=' + mac + '&host=' + host);
                     });
                     testSocket.on('error', function () {
-                        console.log('not a d-cerno');
                         testSocket.end();
                         testSocket = null;
-                        res.redirect('/connect?user=' + firebase.auth().currentUser.email + '&error=Could not make connection to device');
+                        res.redirect('/connect?error=Could not make connection to device');
                     });
                 } else {
-                    res.redirect('/connect?user=' + firebase.auth().currentUser.email + '&error=Could not make connection to device');
+                    res.redirect('/connect?error=Could not make connection to device');
                 }
             });
         } else {
-            res.redirect('/success?user=' + firebase.auth().currentUser.email + '&mac=' + mac + '&host=' + host);
+            firebase.auth().signInWithEmailAndPassword("gateway@micromanager.com", "123456").then(function () {
+                if (host != '') getMac(host);
+            });
+            res.redirect('/failure?mac=' + mac + '&host=' + host);
         }
-    } else {
-        res.redirect('/no-internet');
-    }
+
+    }).catch(function () {
+        res.sendFile(__dirname + "/public/no-internet.html");
+    });
 });
 
 var server = app.listen(8081, function () {
-    var host = server.address().address
-    var port = server.address().port
-
-    console.log("Example app listening at http://%s:%s", host, port)
+    console.log("Open your browser and surf to http://localhost:8081 to configure your gateway.")
 })
 
 

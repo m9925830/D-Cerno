@@ -2,10 +2,11 @@
   "name": "d-cerno",
   "version": "1.0.0",
   "description": "Microphon Manager for D-Cerno",
-  "main": "server.js",
+  "main": "gateway.js",
+  "bin": "gateway.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node server.js"
+    "start": "node gateway.js"
   },
   "author": "",
   "license": "ISC",
@@ -13,7 +14,11 @@
     "@angular/fire": "^5.1.1",
     "@grpc/proto-loader": "^0.4.0",
     "firebase": "^5.8.0",
+    "internet-available": "^1.0.0",
     "node-arp": "^1.0.6",
     "winser": "^1.0.3"
+  },
+  "pkg": {
+    "assets": "public/**/*"
   }
 }

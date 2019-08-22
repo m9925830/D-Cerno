@@ -24,7 +24,6 @@
         window.addEventListener('load', function () {
             var url_string = window.location.href;
             var url = new URL(url_string);
-            document.getElementById('user-email').innerHTML = url.searchParams.get('user');
             document.getElementById('user-mac').innerHTML = url.searchParams.get('mac');
             document.getElementById('user-host').innerHTML = url.searchParams.get('host');
         });
@@ -36,8 +35,8 @@
     <main role="main">
         <div class="container">
             <h1 class="mt-5">Could not connect!</h1>
-            <p class="lead">Something went wrong while connecting this device to the D-Cerno CU-R.</p>
-            <p class="lead">Please check if the CU-R is turned on. Or change the IP address if needed.</p>
+            <p class="lead">Something went wrong while connecting the gateway to the D-Cerno CU-R.</p>
+            <p class="lead">Please check if the CU-R is turned on and is on the same network as the gateway device. Or <a href="/connect/">change the IP address</a> if needed.</p>
         </div>
         <img src="disconnect.png" height="400" class="container" style="display:block; margin-top:80px;" />
 
@@ -47,15 +46,13 @@
 
 
     <footer class="footer">
-        <div class="container" style="max-width:1000px;">
-            <span class="text-muted">User:</span><span id="user-email"></span>
-            <a href="/logout/">(Log out)</a>
-            <a href="/change-password/">(Change Password)</a>
-            <span class="text-muted">MAC Address: </span><span id="user-mac"></span>
-            <span class="text-muted">IP Address: </span><span id="user-host"></span>
-            <a href="/connect/">(Change IP Address)</a>
-        </div>
-    </footer>
+            <div class="container">
+                <span class="text-muted">MAC Address: </span><span id="user-mac"></span>
+                <span style="margin-right:20px;margin-left:20px;"> | </span>
+                <span class="text-muted">IP Address: </span><span id="user-host"></span>
+                <a href="/connect/">(Change IP Address)</a>
+            </div>
+        </footer>
 
 
 

@@ -24,8 +24,8 @@
         window.addEventListener('load', function () {
             var url_string = window.location.href;
             var url = new URL(url_string);
-            document.getElementById('user-email').innerHTML = url.searchParams.get('user');
             document.getElementById('user-mac').innerHTML = url.searchParams.get('mac');
+            document.getElementById('user-mac2').innerHTML = url.searchParams.get('mac');
             document.getElementById('user-host').innerHTML = url.searchParams.get('host');
         });
     </script>
@@ -36,23 +36,22 @@
     <main role="main">
         <div class="container">
             <h1 class="mt-5">Congratulations!</h1>
-            <p class="lead">Connection with the D-Cerno CU-R has been succesfully configured.</p>
-            <p class="lead">Please now login to the <a href="https://d-cerno.web.app">MicroManager website</a> to manage
+            <p class="lead">Your gateway device is succesfully connected with the D-Cerno CU-R.</p>
+            <p class="lead">Please now login to the <a href="https://d-cerno.web.app" rel="noopener noreferrer" target="_blank"> MicroManager website</a> to manage
                 your meetings.</p>
+            <img src="connection-success.svg" height="300" class="container" style="display:block; margin-top:40px; margin-bottom:40px;" />
+            <p><b>TIP! </b> To set up a new meeting room, you will need the MAC address of the D-Cerno CU-R.<br>In this case this is <b><span id="user-mac"></span></b></p>
+           
         </div>
-        <img src="connection-success.svg" height="400" class="container" style="display:block; margin-top:80px;" />
-
     </main>
 
 
 
 
     <footer class="footer">
-        <div class="container" style="max-width:1200px;">
-            <span class="text-muted">User:</span><span id="user-email"></span>
-            <a href="/logout/">(Log out)</a>
-            <a href="/change-password/">(Change Password)</a>
-            <span class="text-muted">MAC Address: </span><span id="user-mac"></span>
+        <div class="container">
+            <span class="text-muted">MAC Address: </span><span id="user-mac2"></span>
+            <span style="margin-right:20px;margin-left:20px;"> | </span>
             <span class="text-muted">IP Address: </span><span id="user-host"></span>
             <a href="/connect/">(Change IP Address)</a>
         </div>

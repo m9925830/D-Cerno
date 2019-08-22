@@ -25,19 +25,20 @@
         window.addEventListener('load', function () {
             var url_string = window.location.href;
             var url = new URL(url_string);
-            document.getElementById('user-email').innerHTML = url.searchParams.get('user');
             document.getElementById('ip-error').innerHTML = url.searchParams.get('error');
         });
-        function ValidateIPaddress(inputText) {
-
+        function ValidateIPaddress() {
+            let inputText = document.getElementById('inputIP').value;
             var ipformat = /^(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)$/;
             console.log(inputText);
             if (inputText.match(ipformat)) {
                 document.getElementById('loading').style.visibility = "visible";
                 document.getElementById("connect-form").submit();
+                return true;
             }
             else {
                 alert("You have entered an invalid IP address format!");
+                document.getElementById('inputIP').value = '192.168.0.100';
                 return false;
             }
         }      
@@ -49,25 +50,21 @@
     <main role="main">
         <div class="container">
             <h1 class="mt-5">Configure the Gateway</h1>
-            <p class="lead">Give the IP address of the D-Cerno CU-R.</p>
+            <p class="lead">Enter the IP address of the D-Cerno CU-R.</p>
+            <p class="lead">Please make sure the gateway device and the D-Cerno CU-R are on the same network.</p>
 
         </div>
     </main>
 
-    <!-- The surrounding HTML is left untouched by FirebaseUI.
-         Your app may use that space for branding, controls and other customizations.  -->
 
-
-
-
-    <form class="form-signin" action="/connect" method="post" name="connect-form">
+    <form class="form-signin" action="/connect" method="post" id="connect-form">
         <h1 class="h3 mb-3 font-weight-normal">Enter IP Address</h1>
         <label for="inputIP" class="sr-only">IP Address</label>
         <input id="inputIP" class="form-control mask-ipv4" required="" autofocus="" value="192.168.0.100"
             name="inputIP">
         <p id="ip-error" class="errormessage"></p>
-        <button class="btn btn-lg btn-primary btn-block"
-            onclick="ValidateIPaddress(document.getElementById('inputIP').value)">Connect with CU-R</button>
+        <button class="btn btn-lg btn-primary btn-block" type="button"
+            onclick="ValidateIPaddress();">Connect with CU-R</button> 
         <div class="text-center" >
             <div class="spinner-border text-primary loading-spinner" role="status" id="loading">
                 <span class="sr-only">Loading...</span>
@@ -79,9 +76,7 @@
 
     <footer class="footer">
         <div class="container">
-            <span class="text-muted">User logged in on device: </span><span id="user-email"></span>
-            <a href="/logout/">Log out</a>
-            <a href="/change-password/">Change Password</a>
+            
         </div>
     </footer>
 
